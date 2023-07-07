@@ -9,6 +9,7 @@ import processing_module
 from processing_module import format_title
 import numpy as np
 from PIL import Image
+import io
 
 # Use the function to format your title
 st.markdown(format_title("BUSINESS CARDS DATA EXTRACTION AND MANAGEMENT WITH OCR AND SQL"), unsafe_allow_html=True)
@@ -41,58 +42,127 @@ if image is not None:
     for text in result:
         result_text.append(text[1])
 
-    #st.write(result_text)
+    #st.write(result_text) 
 
     regex_result = processing_module.regex(result_text)
-    phoneNumber= []
-    phoneID=[]  
-    address=set()
-    addressID=[]
+    #st.write(regex_result)
+
     emailAddress = regex_result[0]
-    emailID= regex_result[0]
-    st.write(emailID)
-    Pincode=''
-    PinID=''
-    website=''
-    webID=''
+    emailID= regex_result[1]
+    Pincode = regex_result[2]
+    PinID = regex_result[3]
+    phoneNumberList = regex_result[4]
+    phoneID=regex_result[5]  
+    address = regex_result[6]
+    addressID = regex_result[7]
+    website = regex_result[8]
+    webID= regex_result[9]
 
-with col3: 
-    # DISPLAY ALL THE ELEMENTS OF BUSINESS CARD 
-    st.write("## EXTRACTED TEXT")
-    st.write('##### :red[WEBSITE URL: ] '+ str(WEB))
-    st.write('##### :red[EMAIL: ] '+ str(EMAIL)) 
-    st.write('##### :red[PIN CODE: ] '+ str(PIN)) 
-    ph_str = ', '.join(PH)
-    st.write('##### :red[PHONE NUMBER(S): ] '+ph_str)
-    add_str = ' '.join([str(elem) for elem in ADD])
-    st.write('##### :red[ADDRESS: ] ', add_str)
+    with col3: 
+            # DISPLAY ALL THE ELEMENTS OF BUSINESS CARD 
+            st.write("#### EXTRACTED TEXT")
+            st.write('##### :blue[WEBSITE URL: ] '+ str(website))
+            st.write('##### :blue[EMAIL: ] '+ str(emailAddress)) 
+            st.write('##### :blue[PIN CODE: ] '+ str(Pincode)) 
+            ph_str = ', '.join(phoneNumberList)
+            st.write('##### :blue[PHONE NUMBER(S): ] '+ph_str)
+            add_str = ' '.join([str(elem) for elem in address])
+            st.write('##### :blue[ADDRESS: ] ', add_str)
+            IDS= [emailID,PinID,phoneID,addressID,webID]
+            oth=''                               
+            fin=[]                        
+            for i, string in enumerate(result_text):
+                if i not in IDS:
+                    if type(string) != int and len(string) >= 4 and ',' not in string and '.' not in string and 'www.' not in string:
+                        if not re.match("^[0-9]{0,3}$", string) and not re.match("^[^a-zA-Z0-9]+$", string):
+                            numbers = re.findall('\d+', string)
+                            if len(numbers) == 0 or all(len(num) < 3 for num in numbers) and not any(num in string for num in ['0','1','2','3','4','5','6','7','8','9']*3):
+                                fin.append(string)
+            st.write('##### :blue[CARD HOLDER & COMPANY DETAILS: ] ')
+            for i in fin:
+                st.write('##### '+i)
+                
+            UP= st.button('UPLOAD TO DATABASE')
 
-    IDS= [EID,PID,WID]
-    IDS.extend(AID)
-    IDS.extend(PHID)
+# DATABASE CODE
+    websiteUpload = str(website)
+    email=str(emailAddress)
+    pincode=str(Pincode)
+    phoneno=ph_str
+    address=add_str
+    det_str = ' '.join([str(elem) for elem in fin])
+    details=det_str
+    image.seek(0)
+    image_data = image.read()
 
-choice = ""
+# IF UPLOAD BUTTON IS ON, THE DATA IS UPLOADED TO DATABASE
+    if UP:
+        if image is not None:
+            # Read image data
+            # Insert image data into MySQL database
+            data = (website, email, pincode , phoneno, address, details, image_data)
+            sql_module.add(data)
+        else:
+            st.write('Please upload business card')
+st.write(' ')
+st.write(' ')
 
-menu = ['Upload', 'View', 'Update', 'Delete']
+col1.markdown("<style>div[data-testid='stHorizontalBlock'] { background-color: rgb(230, 0, 172, 0.1); }</style>", unsafe_allow_html=True)
+# DATABASE PART
+st.write('### EXPLORE BUSINESS CARDS DATABASE ')
+cd, c1, c2,c3= st.columns([0.5, 4,1,4])
+with c1: 
+    st.write(' ')
+    st.write("#### BUSINESS CARDS AVAILABLE IN DATABASE")
+    rows = sql_module.getRowsID()
+    l=[]
+    # DISPLAY ALL THE CARDS AS BUTTONS
+    for row in rows:
+        l.append(row[0])
+        button_label = f"SHOW BUSINESS CARD: {row[0]}"
+        if st.button(button_label):
+            row1 = sql_module.fetchRow(row[0])
+            website_url = row1[1]
+            email = row1[2]
+            pin_code = row1[3]
+            phone_numbers = row1[4]
+            address = row1[5]
+            card_holder_details = row1[6]
 
-upload = st.button("Upload extracted data and interact with db")
+            # DISPLAY SELECTED CARD DETAILS
+            with c3:                     
+                st.write(f"#### BUSINESS CARD {row[0]} DETAILS ")                
+                st.write(f"Website: {website_url}")
+                st.write(f"Email: {email}")
+                st.write(f"PIN Code: {pin_code}")
+                st.write(f"Phone Numbers: {phone_numbers}")
+                st.write(f"Address: {address}")
+                st.write(f"Card Holder & Company Details: {card_holder_details}")
 
-if upload:
-  choice = st.sidebar.selectbox("Select an option", menu)
+                # If the button is clicked, display the corresponding row
+                rowImage = sql_module.fetchRecordImage(row[0])
+                if rowImage is not None:
+                    image_data = rowImage[0]
+                    image = Image.open(io.BytesIO(image_data))
+                    st.image(image)
+                st.write(' ')  
 
-val = [('Peter', 'Lowstreet 4'),
-  ('Amy', 'Apple st 652'),
-  ('Hannah', 'Mountain 21'),
-  ('Michael', 'Valley 345'),
-  ('Sandy', 'Ocean blvd 2'),
-  ('Betty', 'Green Grass 1') ]
+# DELETE MULTIPLE ENTRIES                   
+with c1:
+    st.write(' ')
+    st.write(f"#### SELECT ENTRIES TO DELETE") 
+    selected_options = st.multiselect('', l)
 
-if choice == menu[0]:
-    st.write(sql_module.add(val))
-elif choice == menu[1]:
-    rows = 10
-    st.dataframe(sql_module.view(rows))
-else:
-    st.write("## Thank you")
+    if st.button('DELETE SELECTED ENTRIES'):
+        for option in selected_options:
+            cursor.execute("DELETE FROM business_card_data WHERE id = " +str(option))
+        mydb.commit()
+        st.write("DELETED SELECTED BUSINESS CARD ENTRIES SUCCESSFULLY")
+    st.write(' ')                
+                
+    
+
+
+
 
 
