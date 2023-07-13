@@ -11,6 +11,10 @@ import numpy as np
 from PIL import Image
 import io
 
+# Global Variable
+
+textColor = ":blue"
+
 # Use the function to format your title
 st.markdown(format_title("BUSINESS CARDS DATA EXTRACTION AND MANAGEMENT WITH OCR AND SQL"), unsafe_allow_html=True)
 
@@ -61,25 +65,25 @@ if image is not None:
     with col3: 
             # DISPLAY ALL THE ELEMENTS OF BUSINESS CARD 
             st.write("#### EXTRACTED TEXT")
-            st.write('##### :blue[WEBSITE URL: ] '+ str(website))
-            st.write('##### :blue[EMAIL: ] '+ str(emailAddress)) 
-            st.write('##### :blue[PIN CODE: ] '+ str(Pincode)) 
+            st.write(f'##### {textColor}[WEBSITE URL: ] '+ str(website))
+            st.write(f'##### {textColor}[EMAIL: ] '+ str(emailAddress)) 
+            st.write(f'##### {textColor}[PIN CODE: ] '+ str(processing_module.removeSpace(Pincode))) 
             ph_str = ', '.join(phoneNumberList)
-            st.write('##### :blue[PHONE NUMBER(S): ] '+ph_str)
+            st.write(f'##### {textColor}[PHONE NUMBER(S): ] '+ph_str)
             add_str = ' '.join([str(elem) for elem in address])
-            st.write('##### :blue[ADDRESS: ] ', add_str)
+            st.write(f'##### {textColor}[ADDRESS: ] ', add_str)
             IDS= [emailID,PinID,phoneID,addressID,webID]
             oth=''                               
-            fin=[]                        
+            cardHolderDetails=[]                        
             for i, string in enumerate(result_text):
                 if i not in IDS:
                     if type(string) != int and len(string) >= 4 and ',' not in string and '.' not in string and 'www.' not in string:
                         if not re.match("^[0-9]{0,3}$", string) and not re.match("^[^a-zA-Z0-9]+$", string):
                             numbers = re.findall('\d+', string)
                             if len(numbers) == 0 or all(len(num) < 3 for num in numbers) and not any(num in string for num in ['0','1','2','3','4','5','6','7','8','9']*3):
-                                fin.append(string)
-            st.write('##### :blue[CARD HOLDER & COMPANY DETAILS: ] ')
-            for i in fin:
+                                cardHolderDetails.append(string)
+            st.write('##### {textColor}[Card Holder and Company Details Details: ] ')
+            for i in cardHolderDetails:
                 st.write('##### '+i)
                 
             UP= st.button('UPLOAD TO DATABASE')
@@ -90,7 +94,7 @@ if image is not None:
     pincode=str(Pincode)
     phoneno=ph_str
     address=add_str
-    det_str = ' '.join([str(elem) for elem in fin])
+    det_str = ' '.join([str(elem) for elem in cardHolderDetails])
     details=det_str
     image.seek(0)
     image_data = image.read()

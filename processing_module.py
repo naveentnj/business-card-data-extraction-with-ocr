@@ -9,7 +9,7 @@ def format_title(title: str):
     formatted_title = f"<div style='padding:10px;background-color:rgb(0, 77, 229);border-radius:10px'><h1 style='color:rgb(255, 255, 255);text-align:center;'>{title}</h1></div>"
     return formatted_title
 
-def remove(string):
+def removeSpace(string):
     return string.replace(" ", "")
 
 
@@ -29,13 +29,14 @@ def checkRegex(inputArray):
         #st.write(string)
                     
         # TO FIND EMAIL
-        if re.search(r'@', string.lower()):
+        email_regex = r'([a-zA-Z0-9\.-]+)@([a-zA-Z\.-]+)([a-z]{2,6})'
+        if re.search(email_regex, string.lower()):
             emailAddress = string.lower()
             emailID = i
-            st.write("email_found")
+            #st.write("email_found")
         
         # TO FIND PINCODE
-        pincode_regex = r'([0-9]{3})(\s*)?([0-9]{3,4})'
+        pincode_regex = r'([0-9]{3})(\s*)?([0-9]{3})'
         match = re.search(pincode_regex, string.lower())
         if match:
             Pincode=match.group()
@@ -60,17 +61,17 @@ def checkRegex(inputArray):
             address.add(string)
             addressID.append(i)
             
-        # TO FIND STATE (USING SIMILARITY SCORE)
-        states = ['Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 
+        # To find State and Union Territories (USING SIMILARITY SCORE)
+        states = ['Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Delhi', 'Goa', 'Gujarat', 
         'Haryana','Hyderabad', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh',
             'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 
             'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
             "United States", "China", "Japan", "Germany", "United Kingdom", "France", "India", 
             "Canada", "Italy", "South Korea", "Russia", "Australia", "Brazil", "Spain", "Mexico", 'USA','UK']
 
-        def string_similarity(s1, s2):
-            distance = Levenshtein.distance(s1, s2)
-            similarity = 1 - (distance / max(len(s1), len(s2)))
+        def string_similarity(stringOne, stringTwo):
+            distance = Levenshtein.distance(stringOne, stringTwo)
+            similarity = 1 - (distance / max(len(stringOne), len(stringTwo)))
             return similarity * 100
         
         for x in states:
